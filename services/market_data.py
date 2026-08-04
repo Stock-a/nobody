@@ -12,6 +12,9 @@ import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+KST = ZoneInfo("Asia/Seoul")
 
 HEADERS = {
     "User-Agent": (
@@ -133,6 +136,6 @@ def get_market_data():
     data = {name: val for name, val in results if val}
 
     return {
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "timestamp": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S"),
         "data": data
     }

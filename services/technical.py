@@ -43,7 +43,7 @@ def _find_support_resistance(high_series, low_series, current_price, window=5, l
 
 
 def get_technical_data(code: str) -> dict:
-    rows = get_daily_ohlcv(code, count=300)
+    rows = get_daily_ohlcv(code, count=200)
     if not rows or len(rows) < 30:
         return {"error": "데이터 없음"}
 
