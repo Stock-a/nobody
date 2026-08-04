@@ -1,5 +1,6 @@
-import yfinance as yf
 import pandas as pd
+
+from services.naver_scraper import get_daily_ohlcv, get_realtime_quote
 
 
 def _to_list(series, decimals=0):
@@ -42,21 +43,19 @@ def _find_support_resistance(high_series, low_series, current_price, window=5, l
 
 
 def get_technical_data(code: str) -> dict:
-    hist = None
-    market = "KOSPI"
-    for suffix, mkt in [(".KS", "KOSPI"), (".KQ", "KOSDAQ")]:
-        try:
-            t = yf.Ticker(code + suffix)
-            h = t.history(period="1y")
-            if not h.empty and len(h) > 30:
-                hist = h
-                market = mkt
-                break
-        except Exception:
-            continue
-
-    if hist is None or hist.empty:
+    rows = get_daily_ohlcv(code, count=300)
+    if not rows or len(rows) < 30:
         return {"error": "데이터 없음"}
+
+    quote = get_realtime_quote(code)
+    market = quote.get("market", "KOSPI") if quote else "KOSPI"
+
+    hist = pd.DataFrame(rows)
+    hist["Date"] = pd.to_datetime(hist["date"], format="%Y%m%d")
+    hist = hist.set_index("Date").sort_index()
+    hist = hist.rename(columns={
+        "open": "Open", "high": "High", "low": "Low", "close": "Close", "volume": "Volume",
+    })
 
     close = hist["Close"]
     volume = hist["Volume"]

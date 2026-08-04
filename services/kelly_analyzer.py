@@ -11,93 +11,44 @@
 바탕으로 한 규칙 기반 템플릿으로 생성한다.
 """
 
-import yfinance as yf
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from services.technical import get_technical_data, apply_52w_override
 from services.naver_scraper import (
     get_frgn_data, get_stock_name, get_realtime_quote,
-    get_naver_metrics, get_investor_info, get_news,
+    get_naver_metrics, get_investor_info, get_news, get_daily_ohlcv,
 )
 from services.dart_client import get_recent_disclosures, has_api_key as has_dart_key
 from services.events import get_next_fomc, get_next_earnings
 
 
 # ──────────────────────────────────────────
-# 재무 데이터 수집 (yfinance) + 네이버 데이터로 보강
+# 재무 데이터 — 네이버 통합 API 기반
 # ──────────────────────────────────────────
+#
+# 예전에는 yfinance로 매출성장률/영업이익률/부채비율까지 가져왔으나, 야후 파이낸스가
+# 클라우드 호스팅(Render 등) IP를 차단해 배포 환경에서 타임아웃 → 502로 이어지는
+# 문제가 있어 전량 제거했다. PER/PBR/ROE/시가총액은 네이버 통합 API로 대체되고,
+# 매출성장률/영업이익률/부채비율은 현재 대체 소스가 없어 비어 있는 채로(None) 처리된다
+# (프런트/스코어링 쪽은 이미 None을 "데이터 없음"으로 안전하게 처리하도록 되어 있음).
 
-def _get_financial(code: str) -> dict:
-    for suffix in [".KS", ".KQ"]:
-        try:
-            t = yf.Ticker(code + suffix)
-            info = t.info
-            if not info or not (info.get("previousClose") or info.get("currentPrice")):
-                continue
-
-            result = {
-                "current_price": info.get("currentPrice") or info.get("previousClose"),
-                "per":           info.get("trailingPE"),
-                "pbr":           info.get("priceToBook"),
-                "roe":           info.get("returnOnEquity"),
-                "market_cap":    info.get("marketCap"),
-                "beta":          info.get("beta"),
-                "52w_high":      info.get("fiftyTwoWeekHigh"),
-                "52w_low":       info.get("fiftyTwoWeekLow"),
-                "revenue_growth":  None,
-                "operating_margin": None,
-                "debt_ratio":    None,
-            }
-
-            try:
-                fin = t.financials
-                if fin is not None and not fin.empty:
-                    rev_row = fin.loc["Total Revenue"] if "Total Revenue" in fin.index else None
-                    op_row  = fin.loc["Operating Income"] if "Operating Income" in fin.index else None
-                    if rev_row is not None and len(rev_row) >= 2:
-                        r_now, r_prev = float(rev_row.iloc[0]), float(rev_row.iloc[1])
-                        result["revenue_growth"] = round((r_now - r_prev) / abs(r_prev) * 100, 1) if r_prev else 0
-                        if op_row is not None:
-                            result["operating_margin"] = round(float(op_row.iloc[0]) / r_now * 100, 1) if r_now else None
-            except Exception:
-                pass
-
-            try:
-                bs = t.balance_sheet
-                if bs is not None and not bs.empty:
-                    debt = None
-                    equity = None
-                    for d_key in ["Total Debt", "Long Term Debt"]:
-                        if d_key in bs.index:
-                            debt = float(bs.loc[d_key].iloc[0]); break
-                    for e_key in ["Stockholders Equity", "Total Stockholder Equity", "Common Stock Equity"]:
-                        if e_key in bs.index:
-                            equity = float(bs.loc[e_key].iloc[0]); break
-                    if debt and equity and equity != 0:
-                        result["debt_ratio"] = round(debt / equity * 100, 1)
-            except Exception:
-                pass
-
-            return result
-        except Exception:
-            continue
-    return {}
-
-
-def _merge_financial(fin: dict, naver: dict) -> dict:
-    """yfinance가 못 채운 PER/PBR/시총/ROE를 네이버 통합 API 값으로 보강"""
+def _merge_financial(naver: dict) -> dict:
     m = (naver or {}).get("metrics") or {}
-    result = dict(fin or {})
-    if not result.get("per"):
-        result["per"] = m.get("per")
-    if not result.get("pbr"):
-        result["pbr"] = m.get("pbr")
-    if not result.get("market_cap"):
-        result["market_cap"] = m.get("market_cap")
-    if not result.get("roe") and m.get("eps") and m.get("bps"):
-        result["roe"] = round(m["eps"] / m["bps"], 4)
-    return result
+    roe = round(m["eps"] / m["bps"], 4) if m.get("eps") and m.get("bps") else None
+    return {
+        "current_price":    None,
+        "per":              m.get("per"),
+        "pbr":              m.get("pbr"),
+        "roe":              roe,
+        "market_cap":       m.get("market_cap"),
+        "beta":             None,
+        "52w_high":         m.get("high_52w"),
+        "52w_low":          m.get("low_52w"),
+        "revenue_growth":   None,
+        "operating_margin": None,
+        "debt_ratio":       None,
+    }
 
 
 # ──────────────────────────────────────────
@@ -378,15 +329,14 @@ def _score_relative_strength(tech: dict) -> dict:
 
     stock_ret = round((close[-1] / close[-21] - 1) * 100, 2)
     market = tech.get("market", "KOSPI")
-    idx_ticker = "^KQ11" if market == "KOSDAQ" else "^KS11"
     label = "코스닥" if market == "KOSDAQ" else "코스피"
 
     idx_ret = 0.0
     try:
-        h = yf.Ticker(idx_ticker).history(period="2mo")
-        ic = h["Close"]
-        if len(ic) >= 21:
-            idx_ret = round((ic.iloc[-1] / ic.iloc[-21] - 1) * 100, 2)
+        idx_rows = get_daily_ohlcv(market, count=40)
+        idx_close = [r["close"] for r in idx_rows]
+        if len(idx_close) >= 21:
+            idx_ret = round((idx_close[-1] / idx_close[-21] - 1) * 100, 2)
     except Exception:
         pass
 
@@ -720,7 +670,6 @@ def analyze_stock(code: str, seed: float, current_price: float,
     with ThreadPoolExecutor(max_workers=8) as ex:
         f_tech   = ex.submit(get_technical_data, code)
         f_frgn   = ex.submit(get_frgn_data, code, 10)
-        f_fin    = ex.submit(_get_financial, code)
         f_name   = ex.submit(get_stock_name, code)
         f_quote  = ex.submit(get_realtime_quote, code)
         f_naver  = ex.submit(get_naver_metrics, code)
@@ -730,7 +679,6 @@ def analyze_stock(code: str, seed: float, current_price: float,
 
     tech   = f_tech.result()
     frgn   = f_frgn.result()
-    fin    = f_fin.result()
     name   = f_name.result()
     quote  = f_quote.result()
     naver  = f_naver.result()
@@ -738,13 +686,13 @@ def analyze_stock(code: str, seed: float, current_price: float,
     news   = f_news.result()
     disclosures = f_disc.result()
 
-    fin = _merge_financial(fin, naver)
+    fin = _merge_financial(naver)
     # 52주최고/최저는 m.stock API보다 사용자가 실제로 보는 finance.naver.com 페이지 기준으로 통일
     tech = apply_52w_override(tech, invest)
     # 컨센서스도 같은 페이지 값이 있으면 우선 사용 (없으면 m.stock 값으로 대체)
     consensus = invest if invest.get("target_price") else naver.get("consensus")
 
-    # 현재가: 네이버 실시간 시세 → yfinance → 사용자 입력
+    # 현재가: 네이버 실시간 시세 → 기술적 데이터 종가 → 사용자 입력
     if not current_price or current_price <= 0:
         current_price = quote.get("price") or tech.get("current") or fin.get("current_price") or 0
 

@@ -126,6 +126,41 @@ def _parse_krw_text(text: str) -> int:
     return total
 
 
+def get_daily_ohlcv(symbol: str, count: int = 300) -> list:
+    """
+    일별 시가/고가/저가/종가/거래량 히스토리 (네이버 차트 API).
+    개별 종목 코드("005930")뿐 아니라 지수 심볼("KOSPI","KOSDAQ")도 그대로 동작한다.
+    yfinance 대신 사용 — 클라우드(Render 등) 배포 환경에서 야후 파이낸스가 데이터센터
+    IP를 차단해 타임아웃/502가 나는 문제를 피하기 위함.
+    """
+    url = "https://fchart.stock.naver.com/sise.nhn"
+    try:
+        resp = requests.get(url, headers=HEADERS, params={
+            "symbol": symbol, "timeframe": "day", "count": count, "requestType": 0,
+        }, timeout=10)
+        resp.encoding = "euc-kr"
+        soup = BeautifulSoup(resp.text, "xml")
+
+        rows = []
+        for item in soup.find_all("item"):
+            raw = item.get("data", "")
+            parts = raw.split("|")
+            if len(parts) < 6:
+                continue
+            date_str, o, h, l, c, v = parts[:6]
+            try:
+                rows.append({
+                    "date": date_str,
+                    "open": float(o), "high": float(h), "low": float(l),
+                    "close": float(c), "volume": float(v),
+                })
+            except ValueError:
+                continue
+        return rows
+    except Exception:
+        return []
+
+
 def get_realtime_quote(code: str) -> dict:
     """네이버 실시간 시세 폴링 API — yfinance보다 최신인 당일/최근 거래일 시세"""
     url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{code}"
@@ -140,6 +175,7 @@ def get_realtime_quote(code: str) -> dict:
         change_pct = sign * abs(float(item.get("fluctuationsRatio") or 0))
 
         return {
+            "market":             (item.get("stockExchangeType") or {}).get("nameEng", "KOSPI"),
             "price":              _parse_int(item.get("closePrice", "0")),
             "open":               _parse_int(item.get("openPrice", "0")),
             "high":               _parse_int(item.get("highPrice", "0")),

@@ -8,8 +8,6 @@ API로 제공되지 않는다. 아래 리스트는 연방준비제도(federalres
 
 from datetime import datetime
 
-import yfinance as yf
-
 # 2026년 FOMC 정례회의 마지막 날짜 (federalreserve.gov 공식 캘린더 기준)
 FOMC_2026_DATES = [
     "2026-01-28", "2026-03-18", "2026-04-29", "2026-06-17",
@@ -26,17 +24,10 @@ def get_next_fomc(today: datetime = None) -> str:
 
 
 def get_next_earnings(code: str) -> str:
-    """다음 실적발표 예정일 (yfinance 제공 시). 조회 불가하면 None."""
-    for suffix in [".KS", ".KQ"]:
-        try:
-            t = yf.Ticker(code + suffix)
-            dates = t.get_earnings_dates(limit=8)
-            if dates is None or dates.empty:
-                continue
-            now = datetime.now(dates.index.tz) if dates.index.tz else datetime.now()
-            future = [d for d in dates.index if d >= now]
-            if future:
-                return min(future).strftime("%Y-%m-%d")
-        except Exception:
-            continue
+    """
+    다음 실적발표 예정일. 예전엔 yfinance로 조회했으나, 야후 파이낸스가 클라우드
+    IP를 차단해 배포 환경에서 타임아웃 위험이 있어 제거했다(국내 종목은 애초에
+    이 값을 못 주는 경우가 많아 실효성도 낮았음). 현재는 대체 소스가 없어 항상
+    None("미정")을 반환한다 — DART 공시 기반으로 추후 보완 가능.
+    """
     return None

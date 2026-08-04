@@ -2,11 +2,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from flask import Flask, render_template, jsonify, request
-import yfinance as yf
 
 from services.market_data import get_market_data
 from services.naver_scraper import (
     get_frgn_data, get_stock_name, get_realtime_quote, search_stock_code, get_investor_info,
+    get_daily_ohlcv,
 )
 from services.technical import get_technical_data, apply_52w_override
 from services.kelly_analyzer import analyze_stock
@@ -44,23 +44,16 @@ def frgn(code):
 
 @app.route("/api/stock/<code>/volume")
 def volume(code):
-    for suffix in [".KS", ".KQ"]:
-        try:
-            t = yf.Ticker(code + suffix)
-            hist = t.history(period="1mo")
-            if not hist.empty:
-                data = []
-                for dt, row in hist.iterrows():
-                    data.append({
-                        "date": dt.strftime("%m/%d"),
-                        "volume": int(row["Volume"]),
-                        "close": round(float(row["Close"]), 0)
-                    })
-                return jsonify({"code": code, "data": data})
-        except Exception:
-            continue
-
-    return jsonify({"code": code, "data": []})
+    rows = get_daily_ohlcv(code, count=22)
+    data = []
+    for r in rows:
+        d = r["date"]  # YYYYMMDD
+        data.append({
+            "date": f"{d[4:6]}/{d[6:8]}",
+            "volume": int(r["volume"]),
+            "close": round(r["close"], 0),
+        })
+    return jsonify({"code": code, "data": data})
 
 
 @app.route("/api/stock/<code>/technical")
