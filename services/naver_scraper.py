@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 HEADERS = {
     "User-Agent": (
@@ -126,39 +127,89 @@ def _parse_krw_text(text: str) -> int:
     return total
 
 
-def get_daily_ohlcv(symbol: str, count: int = 300) -> list:
-    """
-    일별 시가/고가/저가/종가/거래량 히스토리 (네이버 차트 API).
-    개별 종목 코드("005930")뿐 아니라 지수 심볼("KOSPI","KOSDAQ")도 그대로 동작한다.
-    yfinance 대신 사용 — 클라우드(Render 등) 배포 환경에서 야후 파이낸스가 데이터센터
-    IP를 차단해 타임아웃/502가 나는 문제를 피하기 위함.
-    """
-    url = "https://fchart.stock.naver.com/sise.nhn"
-    try:
-        resp = requests.get(url, headers=HEADERS, params={
-            "symbol": symbol, "timeframe": "day", "count": count, "requestType": 0,
-        }, timeout=10)
-        resp.encoding = "euc-kr"
-        soup = BeautifulSoup(resp.text, "xml")
+def _fetch_stock_day_page(code: str, page: int) -> list:
+    url = "https://finance.naver.com/item/sise_day.naver"
+    resp = requests.get(url, headers=HEADERS, params={"code": code, "page": page}, timeout=10)
+    resp.encoding = "euc-kr"
+    soup = BeautifulSoup(resp.text, "lxml")
 
-        rows = []
-        for item in soup.find_all("item"):
-            raw = item.get("data", "")
-            parts = raw.split("|")
-            if len(parts) < 6:
-                continue
-            date_str, o, h, l, c, v = parts[:6]
-            try:
-                rows.append({
-                    "date": date_str,
-                    "open": float(o), "high": float(h), "low": float(l),
-                    "close": float(c), "volume": float(v),
-                })
-            except ValueError:
-                continue
-        return rows
+    rows = []
+    for tr in soup.select("table.type2 tr"):
+        tds = tr.find_all("td")
+        if len(tds) != 7:
+            continue
+        date_text = tds[0].get_text(strip=True)
+        if not re.match(r"\d{4}\.\d{2}\.\d{2}", date_text):
+            continue
+        try:
+            rows.append({
+                "date":   date_text.replace(".", ""),
+                "close":  float(tds[1].get_text(strip=True).replace(",", "")),
+                "open":   float(tds[3].get_text(strip=True).replace(",", "")),
+                "high":   float(tds[4].get_text(strip=True).replace(",", "")),
+                "low":    float(tds[5].get_text(strip=True).replace(",", "")),
+                "volume": float(tds[6].get_text(strip=True).replace(",", "")),
+            })
+        except ValueError:
+            continue
+    return rows
+
+
+def _fetch_index_day_page(code: str, page: int) -> list:
+    url = "https://finance.naver.com/sise/sise_index_day.naver"
+    resp = requests.get(url, headers=HEADERS, params={"code": code, "page": page}, timeout=10)
+    resp.encoding = "euc-kr"
+    soup = BeautifulSoup(resp.text, "lxml")
+
+    rows = []
+    for tr in soup.select("table.type_1 tr"):
+        date_td = tr.find("td", class_="date")
+        if not date_td:
+            continue
+        nums = tr.find_all("td", class_="number_1")
+        if len(nums) < 3:
+            continue
+        date_text = date_td.get_text(strip=True)
+        try:
+            close = float(nums[0].get_text(strip=True).replace(",", ""))
+            volume = float(nums[-2].get_text(strip=True).replace(",", ""))
+            rows.append({
+                "date": date_text.replace(".", ""),
+                "open": close, "high": close, "low": close,  # 지수 일별 페이지는 종가만 제공
+                "close": close, "volume": volume,
+            })
+        except ValueError:
+            continue
+    return rows
+
+
+def get_daily_ohlcv(symbol: str, count: int = 250) -> list:
+    """
+    일별 시가/고가/저가/종가/거래량 히스토리. 개별 종목 코드("005930")와 지수 심볼
+    ("KOSPI","KOSDAQ")를 모두 지원하며(지수는 종가만 제공), 페이지를 병렬로 긁어온다.
+
+    yfinance 대신 사용 — 클라우드(Render 등) 배포 환경에서 야후 파이낸스가 데이터센터
+    IP를 차단해 타임아웃/502가 나는 문제를 피하기 위함. finance.naver.com의 다른
+    스크래핑(get_frgn_data 등)과 같은 도메인이라 배포 환경에서도 동일하게 동작 확인됨
+    (fchart.stock.naver.com은 별도 서브도메인이라 배포 환경에서 차단되는 것을 확인해 폐기).
+    """
+    is_index = symbol in ("KOSPI", "KOSDAQ")
+    fetch_page = _fetch_index_day_page if is_index else _fetch_stock_day_page
+    pages = max(1, -(-count // 10))  # ceil(count/10)
+
+    try:
+        with ThreadPoolExecutor(max_workers=10) as ex:
+            futures = [ex.submit(fetch_page, symbol, p) for p in range(1, pages + 1)]
+            results = [f.result() for f in futures]
     except Exception:
         return []
+
+    rows_by_date = {}
+    for page_rows in results:
+        for r in page_rows:
+            rows_by_date[r["date"]] = r
+
+    return sorted(rows_by_date.values(), key=lambda r: r["date"])[-count:]
 
 
 def get_realtime_quote(code: str) -> dict:
