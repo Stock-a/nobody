@@ -1,0 +1,688 @@
+/* ===== CSS 변수 ===== */
+:root {
+  --bg:      #0a0a14;
+  --bg2:     #111120;
+  --card:    #161628;
+  --card2:   #1c1c32;
+  --border:  #2c2c4a;
+
+  /* 텍스트 — 어두운 배경에서 확실히 읽히는 밝은 색 계열 */
+  --text:    #e2e8f0;   /* 기본 텍스트: 밝은 흰회색 */
+  --text2:   #b0bcd0;   /* 보조 텍스트: 약간 어두운 흰회색 */
+  --label:   #94a3b8;   /* 라벨/힌트: 밝은 회청색 */
+  --muted:   #7c8ca0;   /* 최소 가시성 텍스트: 절대 이 이하는 사용 안 함 */
+
+  --up:      #f87171;   /* 상승 빨강 */
+  --down:    #60a5fa;   /* 하락 파랑 */
+  --green:   #4ade80;
+  --cyan:    #22d3ee;
+  --yellow:  #facc15;
+  --purple:  #a78bfa;
+  --orange:  #fb923c;
+}
+
+/* Bootstrap text-muted 오버라이드 */
+.text-muted { color: var(--label) !important; }
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+  min-height: 100vh;
+}
+
+/* ===== 네비게이션 ===== */
+.navbar {
+  background: linear-gradient(135deg, #0a0a20 0%, #161640 100%);
+  border-bottom: 1px solid var(--border);
+}
+.navbar-brand { color: var(--text) !important; }
+.nav-clock { color: var(--label); font-size: 0.85rem; }
+
+/* ===== 섹션 타이틀 ===== */
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.section-subtitle {
+  font-size: 0.82rem;
+  color: var(--label);
+  font-weight: 400;
+}
+
+.badge-section {
+  background: linear-gradient(135deg, #3b82f6, #22d3ee);
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 3px 9px;
+  border-radius: 5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.section-divider {
+  border-color: var(--border);
+  opacity: 1;
+  margin: 2rem 0;
+}
+
+/* ===== 시장 지표 카드 ===== */
+.market-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+  cursor: default;
+}
+.market-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--cyan);
+  box-shadow: 0 4px 20px rgba(34,211,238,0.08);
+}
+.market-card .mkt-label {
+  font-size: 0.75rem;
+  color: var(--label);     /* 라벨: #94a3b8 — 충분히 밝음 */
+  letter-spacing: 0.05em;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+}
+.market-card .mkt-price {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);      /* 가격: 최대 밝기 */
+  letter-spacing: -0.01em;
+}
+.market-card .mkt-change {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-top: 0.1rem;
+}
+.text-up   { color: var(--up); }
+.text-down { color: var(--down); }
+
+/* ===== Live Dot ===== */
+.pulse-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%     { opacity: 0.4; transform: scale(1.5); }
+}
+
+/* ===== 입력 그룹 ===== */
+.bg-card    { background-color: var(--card) !important; }
+.border-card { border-color: var(--border) !important; }
+
+.input-group-text {
+  background-color: var(--card2) !important;
+  border-color: var(--border) !important;
+  color: var(--label) !important;  /* 텍스트: #94a3b8 */
+  font-size: 0.85rem;
+}
+.form-control {
+  background-color: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+  font-size: 0.9rem;
+}
+.form-control::placeholder { color: var(--label) !important; }
+.form-control:focus {
+  background-color: var(--card2) !important;
+  border-color: var(--cyan) !important;
+  box-shadow: 0 0 0 2px rgba(34,211,238,0.12) !important;
+}
+.form-select {
+  background-color: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+/* 라벨 — 반드시 밝게 */
+.form-label {
+  color: var(--text2) !important;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+.form-hint {
+  font-size: 0.75rem;
+  color: var(--label);
+}
+
+/* ===== 탭 네비게이션 ===== */
+.nav-tabs {
+  border-bottom: 1px solid var(--border);
+  gap: 0.25rem;
+}
+.nav-tabs .nav-link {
+  color: var(--label);
+  border: 1px solid transparent;
+  border-radius: 8px 8px 0 0;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.nav-tabs .nav-link:hover {
+  color: var(--text);
+  border-color: var(--border);
+}
+.nav-tabs .nav-link.active {
+  background: var(--card2);
+  border-color: var(--border) var(--border) var(--card2);
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+/* ===== 차트 카드 ===== */
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem;
+}
+.chart-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text2);     /* 차트 제목: #b0bcd0 — 충분히 밝음 */
+  margin-bottom: 0.7rem;
+  letter-spacing: 0.02em;
+}
+.chart-title .badge-indicator {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+.badge-rsi    { background: rgba(168,85,247,0.2); color: #c4b5fd; }
+.badge-macd   { background: rgba(249,115,22,0.2); color: #fdba74; }
+.badge-bb     { background: rgba(34,211,238,0.15); color: #67e8f9; }
+.badge-ma     { background: rgba(74,222,128,0.15); color: #86efac; }
+
+.chart-wrap {
+  position: relative;
+}
+.chart-wrap.h200 { height: 200px; }
+.chart-wrap.h260 { height: 260px; }
+.chart-wrap.h300 { height: 300px; }
+.chart-wrap.h160 { height: 160px; }
+
+/* ===== 지표 요약 카드 (info-pill) ===== */
+.info-pill {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  text-align: center;
+}
+.info-pill .pill-label {
+  font-size: 0.72rem;
+  color: var(--label);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+.info-pill .pill-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.info-pill .pill-sub {
+  font-size: 0.7rem;
+  color: var(--label);
+  margin-top: 0.2rem;
+}
+
+.tech-summary-text {
+  font-size: 0.85rem;
+  color: var(--text2);
+  line-height: 1.8;
+}
+
+/* 52주 진행바 */
+.progress-52w {
+  background: var(--border);
+  border-radius: 4px;
+  height: 6px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+.progress-52w-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--down), var(--cyan), var(--up));
+  border-radius: 4px;
+  transition: width 0.5s;
+}
+
+/* RSI 상태 색상 */
+.rsi-oversold  { color: var(--up) !important; }      /* < 30 과매도: 빨강 */
+.rsi-neutral   { color: var(--green) !important; }   /* 30-70 중립: 초록 */
+.rsi-overbought { color: var(--yellow) !important; } /* > 70 과매수: 노랑 */
+
+/* ===== 테이블 ===== */
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  overflow: hidden;
+}
+.table-dark {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text);
+  --bs-table-hover-bg: rgba(255,255,255,0.04);
+  font-size: 0.82rem;
+}
+.table-dark thead th {
+  color: var(--label) !important;  /* 테이블 헤더: #94a3b8 */
+  font-weight: 600;
+  font-size: 0.78rem;
+  border-bottom: 1px solid var(--border) !important;
+  letter-spacing: 0.03em;
+}
+.table-dark td {
+  color: var(--text2) !important;
+  border-color: rgba(44,44,74,0.6) !important;
+}
+
+/* ===== 켈리 정의 박스 ===== */
+.kelly-def-box {
+  background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(34,211,238,0.06));
+  border: 1px solid rgba(34,211,238,0.2);
+  border-radius: 14px;
+  padding: 1.4rem 1.6rem;
+}
+.kelly-def-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 0.7rem;
+}
+.kelly-def-body {
+  font-size: 0.85rem;
+  color: var(--text2);
+  line-height: 1.75;
+}
+.kelly-formula {
+  font-family: 'Courier New', monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 0.05em;
+}
+.kelly-def-vars {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--label);
+}
+.kelly-def-vars strong { color: var(--text2); }
+
+/* ===== 켈리 입력 카드 ===== */
+.kelly-input-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.4rem;
+}
+
+/* ===== 켈리 분석 결과 카드 ===== */
+.ka-result-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.ka-result-header {
+  background: var(--card2);
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.ka-stock-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.ka-stock-code {
+  font-size: 0.85rem;
+  color: var(--cyan);
+}
+.ka-price {
+  font-size: 1rem;
+  color: var(--text2);
+}
+
+/* 등급 배지 (A+~D) */
+.ka-grade-chip {
+  margin-left: auto;
+  text-align: center;
+  padding: 5px 16px;
+  border-radius: 10px;
+  border: 1px solid currentColor;
+  background: rgba(255,255,255,0.03);
+}
+.ka-grade-letter { display: block; font-size: 1.3rem; font-weight: 800; line-height: 1.1; }
+.ka-grade-sub { display: block; font-size: 0.65rem; color: var(--label); font-weight: 500; }
+
+.ka-result-body { padding: 1.4rem; }
+
+/* 종합 점수 바 */
+.ka-total-score {
+  margin-bottom: 1.4rem;
+}
+.ka-score-label {
+  font-size: 0.8rem;
+  color: var(--label);
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+}
+.ka-score-bar-wrap {
+  background: var(--border);
+  border-radius: 6px;
+  height: 10px;
+  overflow: hidden;
+}
+.ka-score-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.6s ease;
+  background: linear-gradient(90deg, #3b82f6, #22d3ee, #4ade80);
+}
+.ka-score-num {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+.ka-score-unit { font-size: 0.9rem; color: var(--label); }
+
+/* 점수 카테고리 (V2 — 7항목) */
+.ka3-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+.ka-score-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+.ka-score-item .si-label {
+  font-size: 0.75rem;
+  color: var(--label);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.ka-score-item .si-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+}
+.ka-score-item .si-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--cyan);
+}
+.ka-score-item .si-num {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+.ka-score-item .ka-item { font-size: 0.78rem; }
+
+/* 분석 항목 리스트 */
+.ka-items-section { margin-bottom: 1.2rem; }
+.ka-items-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--label);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+.ka-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text2);
+  padding: 0.25rem 0;
+  line-height: 1.5;
+}
+.ka-item .icon { font-size: 0.75rem; flex-shrink: 0; margin-top: 0.15rem; }
+.ka-item.positive .icon { color: var(--green); }
+.ka-item.negative .icon { color: var(--up); }
+.ka-item.neutral  .icon { color: var(--label); }
+
+/* 재무 요약 그리드 */
+.ka-fin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+}
+.ka-fin-cell {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+}
+.ka-fin-cell .fc-label { font-size: 0.7rem; color: var(--label); margin-bottom: 0.2rem; }
+.ka-fin-cell .fc-value { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+
+/* Kelly Score + 투자비중 요약 박스 */
+.ka-kelly-summary-box {
+  background: rgba(34,211,238,0.05);
+  border: 1px solid rgba(34,211,238,0.15);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+}
+.ka-stars { color: var(--yellow); font-size: 1.15rem; letter-spacing: 0.1em; margin-top: 0.2rem; }
+.ka-opinion-inline { font-size: 1.1rem; font-weight: 800; margin-top: 0.2rem; }
+.ka-position-value { font-size: 1.1rem; color: var(--text); margin-top: 0.2rem; }
+
+/* ===== 분할매수 노트 ===== */
+.ka-pos-note {
+  font-size: 0.82rem;
+  color: var(--label);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  line-height: 1.6;
+}
+.ka-pos-note strong { color: var(--text2); }
+
+.ka-warning-box {
+  background: rgba(248,113,113,0.12);
+  border: 1px solid rgba(248,113,113,0.4);
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  color: #f87171;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ===== 불타기(추가매수) 섹션 ===== */
+.ka-pyramid-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+}
+.ka-pyramid-verdict {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 14px;
+  border: 1px solid currentColor;
+}
+.ka-checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.4rem 1rem;
+  margin-top: 0.6rem;
+}
+.ka-check-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; }
+.ka-check-item.ok  { color: var(--green); }
+.ka-check-item.no  { color: var(--label); }
+.ka-check-item .icon { font-weight: 800; }
+
+/* ===== 손절/익절 사이드 카드 ===== */
+.ka-side-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  height: 100%;
+}
+.ka-type-badge {
+  background: rgba(148,163,184,0.12);
+  color: var(--text2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+.ka-big-price { font-size: 1.5rem; font-weight: 800; }
+.ka-tp-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.06);
+}
+.ka-tp-row:last-child { border-bottom: none; }
+.ka-tp-label { font-weight: 700; color: var(--cyan); min-width: 46px; }
+.ka-tp-price { font-weight: 700; color: var(--green); }
+
+/* ===== 핵심 이벤트 ===== */
+.ka-event-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+}
+.ka-event-cell {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+}
+.ka-event-list .ka-link-item {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text2);
+  text-decoration: none;
+  padding: 0.2rem 0;
+}
+.ka-event-list .ka-link-item:hover { color: var(--cyan); }
+.ka-link-date { color: var(--label); font-size: 0.72rem; margin-right: 0.5rem; }
+
+/* ===== 시나리오 ===== */
+.ka-scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+.ka-scenario-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+.ka-scenario-label { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+.ka-scenario-text { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+
+/* ===== 결론 배너 ===== */
+.ka-verdict-banner {
+  background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(34,211,238,0.06));
+  border: 1px solid rgba(34,211,238,0.25);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+}
+.ka-verdict-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.3rem;
+}
+.ka-verdict-text { font-size: 0.9rem; color: var(--text); line-height: 1.6; }
+
+/* 반응형 */
+@media (max-width: 992px) {
+  .ka-event-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .ka3-scores-grid { grid-template-columns: 1fr 1fr; }
+  .ka-scenario-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .ka3-scores-grid { grid-template-columns: 1fr; }
+  .ka-event-grid { grid-template-columns: 1fr; }
+  .kelly-def-vars { gap: 0.8rem; }
+}
+
+/* ===== 수급 요약 배지 ===== */
+.flow-summary {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.flow-badge {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.82rem;
+}
+.flow-badge .fb-label { color: var(--label); font-weight: 500; margin-right: 0.4rem; }
+.flow-badge .fb-value { font-weight: 700; }
+
+.ka-list-name-cell { cursor: pointer; }
+.ka-list-name-cell:hover strong { color: var(--cyan); text-decoration: underline; }
+
+/* ===== 로딩 스피너 ===== */
+.loading-area {
+  text-align: center;
+  padding: 2rem;
+  color: var(--label);
+  font-size: 0.9rem;
+}
+
+/* ===== 반응형 ===== */
+@media (max-width: 992px) {
+  .chart-wrap.h300 { height: 240px; }
+}
+@media (max-width: 768px) {
+  .chart-wrap.h260 { height: 200px; }
+}
+@media (max-width: 576px) {
+  .market-card .mkt-price { font-size: 1rem; }
+  .info-pill .pill-value  { font-size: 0.9rem; }
+}

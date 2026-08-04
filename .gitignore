@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.env
+server_out.log
+server_err.log
+data/dart_corp_codes.json
