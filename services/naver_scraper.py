@@ -35,7 +35,7 @@ def get_frgn_data(code: str, days: int = 20) -> list:
     try:
         resp = requests.get(url, headers=HEADERS, timeout=10)
         resp.encoding = "euc-kr"
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
 
         # 두 번째 type2 테이블이 날짜별 수급 데이터
         tables = soup.find_all("table", {"class": "type2"})
@@ -131,7 +131,7 @@ def _fetch_stock_day_page(code: str, page: int) -> list:
     url = "https://finance.naver.com/item/sise_day.naver"
     resp = requests.get(url, headers=HEADERS, params={"code": code, "page": page}, timeout=10)
     resp.encoding = "euc-kr"
-    soup = BeautifulSoup(resp.text, "lxml")
+    soup = BeautifulSoup(resp.text, "html.parser")
 
     rows = []
     for tr in soup.select("table.type2 tr"):
@@ -159,7 +159,7 @@ def _fetch_index_day_page(code: str, page: int) -> list:
     url = "https://finance.naver.com/sise/sise_index_day.naver"
     resp = requests.get(url, headers=HEADERS, params={"code": code, "page": page}, timeout=10)
     resp.encoding = "euc-kr"
-    soup = BeautifulSoup(resp.text, "lxml")
+    soup = BeautifulSoup(resp.text, "html.parser")
 
     rows = []
     for tr in soup.select("table.type_1 tr"):
@@ -261,7 +261,7 @@ def get_news(code: str, limit: int = 5) -> list:
     try:
         resp = requests.get(url, headers=HEADERS, timeout=8)
         resp.encoding = "euc-kr"
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
 
         news = []
         for row in soup.select("table.type5 tr"):
@@ -334,7 +334,7 @@ def get_investor_info(code: str) -> dict:
     try:
         resp = requests.get(url, headers=HEADERS, timeout=8)
         resp.encoding = "utf-8"
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
 
         table = soup.find("table", {"summary": "투자의견 정보"})
         if not table:

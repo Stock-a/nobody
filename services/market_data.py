@@ -90,7 +90,7 @@ def _fetch_oil(marketindex_cd: str) -> dict:
     url = "https://finance.naver.com/marketindex/worldOilDetail.naver"
     resp = requests.get(url, headers=HEADERS, params={"marketindexCd": marketindex_cd, "fdtc": 2}, timeout=8)
     resp.encoding = "euc-kr"
-    soup = BeautifulSoup(resp.text, "lxml")
+    soup = BeautifulSoup(resp.text, "html.parser")
 
     today = soup.select_one("p.no_today em")
     exday = soup.select_one("p.no_exday em:nth-of-type(2)")
