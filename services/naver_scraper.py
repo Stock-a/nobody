@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
-from concurrent.futures import ThreadPoolExecutor
+import time
 
 HEADERS = {
     "User-Agent": (
@@ -184,42 +184,41 @@ def _fetch_index_day_page(code: str, page: int) -> list:
 
 
 def _fetch_page_safe(fetch_page, symbol: str, page: int) -> list:
-    """페이지 하나가 실패(네트워크 오류/차단 등)해도 나머지 페이지는 살리기 위한 래퍼"""
+    """페이지 하나가 실패(네트워크 오류/차단 등)해도 나머지 페이지는 살리기 위한 래퍼.
+    실패 원인은 print로 남겨 Render 로그에서 바로 확인할 수 있게 한다."""
     try:
         return fetch_page(symbol, page)
-    except Exception:
+    except Exception as e:
+        print(f"[get_daily_ohlcv] page {page} 실패 ({symbol}): {type(e).__name__}: {e}", flush=True)
         return []
 
 
 def get_daily_ohlcv(symbol: str, count: int = 250) -> list:
     """
     일별 시가/고가/저가/종가/거래량 히스토리. 개별 종목 코드("005930")와 지수 심볼
-    ("KOSPI","KOSDAQ")를 모두 지원하며(지수는 종가만 제공), 페이지를 병렬로 긁어온다.
+    ("KOSPI","KOSDAQ")를 모두 지원하며(지수는 종가만 제공), 페이지를 순차적으로 긁어온다.
 
     yfinance 대신 사용 — 클라우드(Render 등) 배포 환경에서 야후 파이낸스가 데이터센터
     IP를 차단해 타임아웃/502가 나는 문제를 피하기 위함. finance.naver.com의 다른
     스크래핑(get_frgn_data 등)과 같은 도메인이라 배포 환경에서도 동일하게 동작 확인됨
     (fchart.stock.naver.com은 별도 서브도메인이라 배포 환경에서 차단되는 것을 확인해 폐기).
 
-    동시성은 일부러 낮게(4) 유지한다 — 짧은 시간에 같은 도메인으로 요청이 몰리면
-    네이버 쪽에서 봇으로 오인해 차단할 위험이 있고, 무료 클라우드 서버는 CPU가
-    약해 과도한 병렬 요청이 오히려 타임아웃/크래시를 유발한다. 페이지 하나가
-    실패해도 전체를 실패시키지 않고 나머지 페이지 데이터라도 반환한다.
+    페이지가 적을 때(3개, 거래량용)는 배포 환경에서 문제없이 동작하는데 페이지가
+    많을 때(15개, 기술적분석용)는 실패하는 것을 확인함 — 짧은 시간에 같은 도메인으로
+    요청이 몰리면 네이버가 차단하는 것으로 추정. 병렬 대신 약간의 간격을 둔 순차
+    요청으로 바꿔 요청 속도를 늦춘다. 페이지 하나가 실패해도 전체를 실패시키지
+    않고 나머지 페이지 데이터라도 반환한다.
     """
     is_index = symbol in ("KOSPI", "KOSDAQ")
     fetch_page = _fetch_index_day_page if is_index else _fetch_stock_day_page
     pages = max(1, -(-count // 10))  # ceil(count/10)
 
-    results = []
-    with ThreadPoolExecutor(max_workers=4) as ex:
-        futures = [ex.submit(_fetch_page_safe, fetch_page, symbol, p) for p in range(1, pages + 1)]
-        for f in futures:
-            results.append(f.result())
-
     rows_by_date = {}
-    for page_rows in results:
-        for r in page_rows:
+    for p in range(1, pages + 1):
+        for r in _fetch_page_safe(fetch_page, symbol, p):
             rows_by_date[r["date"]] = r
+        if p < pages:
+            time.sleep(0.25)
 
     return sorted(rows_by_date.values(), key=lambda r: r["date"])[-count:]
 
